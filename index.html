@@ -1,0 +1,1112 @@
+```html
+<!DOCTYPE html>
+<html lang="it" class="dark h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tag per PWA Android -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/06b6d4/080d1a.png?text=FINANZE">
+    
+    <title>Gestione Finanze Personali - Emanuele</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151f32',
+                            900: '#0f172a',
+                            950: '#080d1a',
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                        },
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .glass-card {
+            background: rgba(21, 31, 50, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .bottom-nav-active {
+            color: #22d3ee;
+            position: relative;
+        }
+        .bottom-nav-active::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background-color: #22d3ee;
+            border-radius: 9999px;
+            box-shadow: 0 0 8px #22d3ee;
+        }
+    </style>
+</head>
+<body class="text-slate-100 bg-slate-950 min-h-full pb-24 md:pb-6">
+
+    <!-- TOP HEADER APP BAR -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-slate-950 text-xl shadow-lg shadow-cyan-500/20">
+                E
+            </div>
+            <div>
+                <h1 class="text-base font-bold leading-none text-slate-100">Finanze Emanuele</h1>
+                <p class="text-xs text-slate-400 mt-0.5" id="currentDateStr">Caricamento data...</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="pwaInstallBtn" onclick="installPwaApp()" class="hidden items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40 text-xs font-semibold transition">
+                <i class="fa-solid fa-download"></i>
+                <span class="hidden sm:inline">Installa App</span>
+            </button>
+            <button onclick="resetDataModal()" title="Ripristina Dati Demo" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-sm">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Sincronizzato
+            </span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER WITH TABS -->
+    <main class="max-w-4xl mx-auto px-4 pt-4">
+
+        <!-- SECTION 1: OVERVIEW & ACCANTONAMENTO (Always visible top highlight) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+            
+            <!-- CARD ACCANTONAMENTO TASSE/IMU -->
+            <div class="glass-card rounded-2xl p-4 border-l-4 border-l-amber-500 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-xs font-medium uppercase tracking-wider text-amber-400/90">Accantonamento Tasse & IMU</span>
+                        <h3 class="text-2xl font-bold text-slate-50 mt-1" id="taxReserveDisplay">€675,00<span class="text-xs text-slate-400 font-normal">/mese</span></h3>
+                    </div>
+                    <div class="p-2.5 bg-amber-500/10 rounded-xl text-amber-400">
+                        <i class="fa-solid fa-building-columns text-lg"></i>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 mt-2 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Tasse (€542) + IMU (€133):</span>
+                        <span class="font-semibold text-slate-200">€675,00/m</span>
+                    </div>
+                    <div class="flex justify-between text-amber-300">
+                        <span>Pendenza Residua (2 rate + scadenze):</span>
+                        <span class="font-bold">€2.900,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD SPESE FISSE / RID -->
+            <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-500 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-xs font-medium uppercase tracking-wider text-cyan-400/90">Uscite Fisse & Abbonamenti</span>
+                        <h3 class="text-2xl font-bold text-slate-50 mt-1" id="fixedCostsDisplay">€1.272,90<span class="text-xs text-slate-400 font-normal">/mese</span></h3>
+                    </div>
+                    <div class="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-400">
+                        <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400">TIM, Iliad, Play, Google, OXFAM, Contabo, PC, Tapis Roulant, Telecamere.</p>
+                <div class="mt-3 flex items-center justify-between text-xs pt-2 border-t border-slate-800">
+                    <span class="text-slate-400">Totale Fissi + Tasse:</span>
+                    <span class="font-bold text-slate-200" id="totalFixedDisplay">€1.947,90 / mese</span>
+                </div>
+            </div>
+
+            <!-- CARD MARGINE RESIDUO & SETTIMANALE -->
+            <div class="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500 relative overflow-hidden md:col-span-1 col-span-1">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-xs font-medium uppercase tracking-wider text-emerald-400/90">Margine Residuo Spesa/Extra</span>
+                        <h3 class="text-2xl font-bold text-slate-50 mt-1" id="remainingMarginDisplay">€752,10<span class="text-xs text-slate-400 font-normal">/mese</span></h3>
+                    </div>
+                    <div class="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <i class="fa-solid fa-wallet text-lg"></i>
+                    </div>
+                </div>
+                <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/20 mt-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-emerald-300 font-medium"><i class="fa-solid fa-bullseye mr-1"></i> Budget Settimanale Spesa:</span>
+                        <span class="text-sm font-bold text-emerald-400">€350,00 / sett.</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
+                        <div id="weeklyProgressBar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full" style="width: 42%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span id="spentThisWeekText">Spesi questa sett: €146,50</span>
+                        <span id="remainingThisWeekText">Rimanenti: €203,50</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB NAVIGATION CONTENT PANELS -->
+
+        <!-- TAB 1: DASHBOARD & TRANSAZIONI (DEFAULT) -->
+        <div id="tab-dashboard" class="tab-content space-y-5">
+            
+            <!-- AZIONI RAPIDE (QUICK ACTIONS FOR MOBILE) -->
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="switchTab('tab-scontrini')" class="flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-bold p-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                    <i class="fa-solid fa-camera text-lg"></i>
+                    <span>Scansiona Scontrino</span>
+                </button>
+                <button onclick="switchTab('tab-estratto')" class="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold p-3.5 rounded-xl border border-slate-700 transition active:scale-95">
+                    <i class="fa-solid fa-file-import text-lg"></i>
+                    <span>Importa Estratto Conto</span>
+                </button>
+            </div>
+
+            <!-- RECENT TRANSACTIONS HEADER & LIST -->
+            <div class="glass-card rounded-2xl p-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-cyan-400 text-lg"></i>
+                        <h2 class="font-bold text-lg text-slate-100">Registro Transazioni</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <select id="filterType" onchange="renderTransactions()" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                            <option value="ALL">Tutte le Uscite/Entrate</option>
+                            <option value="RID">Uscite Fisse / RID</option>
+                            <option value="TAX">Tasse & IMU</option>
+                            <option value="SCONTRINO">Scontrini / Spesa Contanti</option>
+                            <option value="INCOME">Entrate / Stipendio</option>
+                        </select>
+                        <button onclick="openManualTransactionModal()" class="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 p-2 rounded-lg text-xs font-semibold border border-cyan-500/30 transition">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIST CONTAINER -->
+                <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1" id="transactionsList">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 2: ANALISI & GRAFICI -->
+        <div id="tab-grafici" class="tab-content space-y-5 hidden">
+            
+            <div class="glass-card rounded-2xl p-4">
+                <h2 class="font-bold text-lg text-slate-100 mb-1"><i class="fa-solid fa-chart-pie mr-2 text-cyan-400"></i>Ripartizione Spese Mensili</h2>
+                <p class="text-xs text-slate-400 mb-4">Distribuzione percentuale tra Tasse, Fisse RID e Spese Variabili</p>
+                <div class="relative h-64 w-full flex items-center justify-center">
+                    <canvas id="expensesPieChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4">
+                <h2 class="font-bold text-lg text-slate-100 mb-1"><i class="fa-solid fa-chart-column mr-2 text-emerald-400"></i>Confronto Entrate vs Uscite</h2>
+                <p class="text-xs text-slate-400 mb-4">Stipendio (€2.700) vs Copertura Costi e Margine Libero</p>
+                <div class="relative h-64 w-full">
+                    <canvas id="budgetBarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4">
+                <h2 class="font-bold text-lg text-slate-100 mb-1"><i class="fa-solid fa-chart-line mr-2 text-amber-400"></i>Andamento Flusso di Cassa</h2>
+                <p class="text-xs text-slate-400 mb-4">Evoluzione del margine accumulato nel corso dei mesi</p>
+                <div class="relative h-56 w-full">
+                    <canvas id="cashflowTrendChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 3: SCANSIONE SCONTRINI (OCR SIMULATO + FOTO) -->
+        <div id="tab-scontrini" class="tab-content space-y-5 hidden">
+            <div class="glass-card rounded-2xl p-5 border border-emerald-500/30">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                        <i class="fa-solid fa-receipt text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-100">Scansione Scontrino / OCR</h2>
+                        <p class="text-xs text-slate-400">Scatta foto o carica uno scontrino per estrarre i dati in automatico</p>
+                    </div>
+                </div>
+
+                <!-- CAMERA / UPLOAD AREA -->
+                <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-900/50 rounded-2xl p-6 text-center cursor-pointer transition relative overflow-hidden" id="receiptDropZone">
+                    <input type="file" id="receiptFileInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onchange="handleReceiptUpload(event)">
+                    <div id="receiptUploadPrompt" class="space-y-3">
+                        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto text-emerald-400 text-2xl shadow-inner">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Tocca qui per scattare una foto o caricare</p>
+                            <p class="text-xs text-slate-400 mt-1">Legge automaticamente Commerciante, Totale, Data e Categoria</p>
+                        </div>
+                        <span class="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">
+                            Rilevamento Automatico Attivo
+                        </span>
+                    </div>
+
+                    <!-- PREVIEW SCANNING STATE -->
+                    <div id="receiptScanningState" class="hidden space-y-3 py-4">
+                        <div class="relative w-32 h-32 mx-auto rounded-lg overflow-hidden border-2 border-emerald-400 shadow-lg">
+                            <img id="receiptImagePreview" class="w-full h-full object-cover" alt="Scontrino Preview">
+                            <div class="absolute inset-0 bg-emerald-500/20 animate-pulse"></div>
+                        </div>
+                        <div class="flex items-center justify-center space-x-2 text-emerald-400 font-semibold text-sm">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <span>Analisi OCR in corso...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OCR RESULT DETECTED FORM -->
+                <div id="ocrResultForm" class="hidden mt-5 bg-slate-900/90 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-check-circle mr-1"></i> Dati Rilevati dallo Scontrino</span>
+                        <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Verifica e conferma</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Commerciante / Negozio</label>
+                            <input type="text" id="ocrMerchant" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Importo Totale (€)</label>
+                            <input type="number" step="0.01" id="ocrAmount" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Data Scontrino</label>
+                            <input type="date" id="ocrDate" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Categoria Spesa</label>
+                            <select id="ocrCategory" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                                <option value="Supermercato/Alimentari">Supermercato / Spesa</option>
+                                <option value="Carburante">Carburante / Trasporti</option>
+                                <option value="Bricolage/Casa">Bricolage / Casa</option>
+                                <option value="Ristoranti/Bar">Bar / Ristorante</option>
+                                <option value="Altro/Extra">Altro / Extra</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex space-x-2">
+                        <button onclick="saveOcrTransaction()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-2.5 rounded-xl shadow-lg transition text-sm">
+                            <i class="fa-solid fa-save mr-1"></i> Salva in Registro Spese
+                        </button>
+                        <button onclick="cancelOcrScan()" class="bg-slate-800 text-slate-300 p-2.5 rounded-xl text-sm hover:bg-slate-700">
+                            Annulla
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QUICK DEMO RECEIPTS BUTTONS -->
+                <div class="mt-4 pt-3 border-t border-slate-800">
+                    <p class="text-xs text-slate-400 mb-2">Oppure simula scansione scontrini tipici:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="simulateReceiptScan('Conad Supermercato', 68.40, 'Supermercato/Alimentari')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-800">
+                            🛒 Conad €68,40
+                        </button>
+                        <button onclick="simulateReceiptScan('ENI Station', 50.00, 'Carburante')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-800">
+                            ⛽ Distributore €50,00
+                        </button>
+                        <button onclick="simulateReceiptScan('Leroy Merlin Latina', 34.90, 'Bricolage/Casa')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-800">
+                            🛠️ Leroy Merlin €34,90
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 4: IMPORTAZIONE ESTRATTO CONTO -->
+        <div id="tab-estratto" class="tab-content space-y-5 hidden">
+            <div class="glass-card rounded-2xl p-5 border border-cyan-500/30">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl">
+                        <i class="fa-solid fa-file-csv text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-100">Parser Estratto Conto</h2>
+                        <p class="text-xs text-slate-400">Carica il tuo file bancario (PDF, CSV, Excel o Immagine)</p>
+                    </div>
+                </div>
+
+                <!-- DROPZONE ESTRATTO CONTO -->
+                <div class="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 bg-slate-900/50 rounded-2xl p-6 text-center cursor-pointer transition relative" id="bankDropZone">
+                    <input type="file" id="bankFileInput" accept=".csv,.pdf,.png,.jpg,.jpeg" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onchange="handleBankStatementUpload(event)">
+                    <div class="space-y-3">
+                        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto text-cyan-400 text-2xl shadow-inner">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Trascina qui il file bancario o tocca per cercare</p>
+                            <p class="text-xs text-slate-400 mt-1">Supporta estratti conto bancari mensili e trimestrali</p>
+                        </div>
+                        <button onclick="simulateBankStatementImport()" type="button" class="relative z-20 inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Simula Importazione Estratto Mensile</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="importLog" class="hidden mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-cyan-300 space-y-1">
+                    <p class="text-slate-400">// Registro elaborazione file:</p>
+                    <p id="importLogContent">In attesa di file...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: ENTRATE & SETUP CONFIGURAZIONE -->
+        <div id="tab-entrate" class="tab-content space-y-5 hidden">
+            
+            <!-- ENTRATE RECURRING & STIPENDIO -->
+            <div class="glass-card rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                            <i class="fa-solid fa-money-bill-wave text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-100">Configurazione Entrate</h2>
+                            <p class="text-xs text-slate-400">Imposta stipendio mensile e altre entrate ricorrenti</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider block">Stipendio Principale</label>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-slate-400 text-sm">€</span>
+                            <input type="number" id="incomeSalaryInput" value="2700.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-lg font-bold text-slate-100 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span>Giorno Accredito Mensile:</span>
+                            <input type="number" min="1" max="31" value="27" id="salaryDayInput" class="w-16 bg-slate-950 border border-slate-700 rounded p-1 text-center text-slate-200">
+                        </div>
+                        <button onclick="saveSalaryConfig()" class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-semibold p-2 rounded-lg text-xs border border-emerald-500/30 transition">
+                            Aggiorna Stipendio
+                        </button>
+                    </div>
+
+                    <!-- AGGIUNGI ENTRATA EXTRA -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Aggiungi Entrata Extra</label>
+                        <input type="text" id="extraIncomeDesc" placeholder="Es. Rimborso, Prestazione Occasionale..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+                        <div class="flex space-x-2">
+                            <input type="number" id="extraIncomeAmount" placeholder="Importo €" class="w-1/2 bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+                            <input type="date" id="extraIncomeDate" class="w-1/2 bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+                        </div>
+                        <button onclick="addExtraIncome()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold p-2 rounded-lg text-xs transition">
+                            Registra Entrata
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROSPOETTO RIASSUNTIVO DELLE USCITE FISSE MAAPPATE -->
+            <div class="glass-card rounded-2xl p-5">
+                <h3 class="font-bold text-md text-slate-200 mb-3"><i class="fa-solid fa-list text-cyan-400 mr-2"></i>Elenco Abbonamenti e RID Inclusi</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">Fibra TIM + Telecamere</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">Iliad SIM</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">PlayStation Network</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">Google One / Storage</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">OXFAM Donazione</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 block">PayPal / Server Contabo</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 col-span-2 sm:col-span-1">
+                        <span class="text-slate-400 block">Finanziamento PC / Tapis Roulant</span>
+                        <span class="font-bold text-slate-200">Incluso nei Fissi</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-2 py-2 md:hidden">
+        <div class="flex justify-around items-center">
+            <button onclick="switchTab('tab-dashboard')" id="nav-tab-dashboard" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition text-[10px] bottom-nav-active">
+                <i class="fa-solid fa-house text-lg mb-0.5"></i>
+                <span>Home</span>
+            </button>
+            <button onclick="switchTab('tab-scontrini')" id="nav-tab-scontrini" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition text-[10px]">
+                <i class="fa-solid fa-camera text-lg mb-0.5"></i>
+                <span>Scontrini</span>
+            </button>
+            <button onclick="switchTab('tab-grafici')" id="nav-tab-grafici" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition text-[10px]">
+                <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+                <span>Grafici</span>
+            </button>
+            <button onclick="switchTab('tab-estratto')" id="nav-tab-estratto" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition text-[10px]">
+                <i class="fa-solid fa-file-import text-lg mb-0.5"></i>
+                <span>Estratto</span>
+            </button>
+            <button onclick="switchTab('tab-entrate')" id="nav-tab-entrate" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition text-[10px]">
+                <i class="fa-solid fa-sliders text-lg mb-0.5"></i>
+                <span>Setup</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- DESKTOP TOP NAV BAR INTEGRATION FOR TABLETS/PC -->
+    <div class="hidden md:flex fixed top-3 right-4 z-50 space-x-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <button onclick="switchTab('tab-dashboard')" class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800">Home</button>
+        <button onclick="switchTab('tab-scontrini')" class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800">Scontrini</button>
+        <button onclick="switchTab('tab-grafici')" class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800">Grafici</button>
+        <button onclick="switchTab('tab-estratto')" class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800">Estratto Conto</button>
+        <button onclick="switchTab('tab-entrate')" class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800">Setup</button>
+    </div>
+
+    <!-- MODAL MANUAL TRANSACTION -->
+    <div id="manualModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 w-full max-w-md rounded-2xl p-5 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-slate-100 text-base">Aggiungi Movimento Manuale</h3>
+                <button onclick="closeManualTransactionModal()" class="text-slate-400 hover:text-slate-100">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Descrizione</label>
+                    <input type="text" id="manualDesc" placeholder="Es. Rifornimento Auto, Spesa..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Importo (€)</label>
+                        <input type="number" step="0.01" id="manualAmount" placeholder="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Tipo Movimento</label>
+                        <select id="manualType" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500">
+                            <option value="SCONTRINO">Spesa Extra / Contanti</option>
+                            <option value="RID">Uscita Fissa / RID</option>
+                            <option value="TAX">Tasse / IMU</option>
+                            <option value="INCOME">Entrata</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Data</label>
+                    <input type="date" id="manualDate" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="saveManualTransaction()" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl transition text-xs">
+                    Salva Movimento
+                </button>
+                <button onclick="closeManualTransactionModal()" class="bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-xs hover:bg-slate-700">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC & STATE MANAGEMENT -->
+    <script>
+        // --- CONSTANTS & INITIAL DATA ---
+        const DEFAULT_MONTHLY_SALARY = 2700.00;
+        const DEFAULT_TAX_RESERVE = 675.00; // €542 tasse + €133 IMU
+        const DEFAULT_FIXED_COSTS = 1272.90; // TIM, Iliad, Play, PC, Tapis, etc.
+        const WEEKLY_SPENDING_BUDGET = 350.00;
+
+        // Initial Seed Transactions
+        const SEED_TRANSACTIONS = [
+            { id: 1, desc: 'Stipendio Mensile', amount: 2700.00, type: 'INCOME', category: 'Stipendio', date: '2026-10-27', icon: 'fa-money-bill-wave', color: 'emerald' },
+            { id: 2, desc: 'Accantonamento Tasse + IMU', amount: 675.00, type: 'TAX', category: 'Tasse/IMU', date: '2026-10-28', icon: 'fa-building-columns', color: 'amber' },
+            { id: 3, desc: 'TIM Fibra + Telecamere Latina', amount: 44.90, type: 'RID', category: 'Uscite Fisse', date: '2026-10-05', icon: 'fa-wifi', color: 'cyan' },
+            { id: 4, desc: 'Rata PC & Tapis Roulant', amount: 180.00, type: 'RID', category: 'Uscite Fisse', date: '2026-10-10', icon: 'fa-laptop', color: 'cyan' },
+            { id: 5, desc: 'Contabo Server (PayPal)', amount: 14.99, type: 'RID', category: 'Uscite Fisse', date: '2026-10-12', icon: 'fa-server', color: 'cyan' },
+            { id: 6, desc: 'Iliad Mobile + Google One', amount: 11.98, type: 'RID', category: 'Uscite Fisse', date: '2026-10-15', icon: 'fa-mobile-screen', color: 'cyan' },
+            { id: 7, desc: 'PlayStation Plus & OXFAM', amount: 23.99, type: 'RID', category: 'Uscite Fisse', date: '2026-10-18', icon: 'fa-gamepad', color: 'cyan' },
+            { id: 8, desc: 'Spesa Alimentari Conad', amount: 86.50, type: 'SCONTRINO', category: 'Supermercato', date: '2026-10-29', icon: 'fa-cart-shopping', color: 'emerald' },
+            { id: 9, desc: 'Rifornimento Q8 Carburante', amount: 60.00, type: 'SCONTRINO', category: 'Carburante', date: '2026-10-30', icon: 'fa-gas-pump', color: 'emerald' }
+        ];
+
+        // Global State
+        let state = {
+            salary: DEFAULT_MONTHLY_SALARY,
+            taxReserve: DEFAULT_TAX_RESERVE,
+            fixedCosts: DEFAULT_FIXED_COSTS,
+            weeklyBudget: WEEKLY_SPENDING_BUDGET,
+            transactions: []
+        };
+
+        let deferredPrompt = null;
+
+        // --- PWA INSTALL PROMPT HANDLER ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) {
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+            }
+        });
+
+        function installPwaApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwaInstallBtn').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // --- REGISTER SERVICE WORKER INLINE ---
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'finanze-app-v1';
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./', './index.html'])));
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+
+        // Chart instances
+        let pieChart = null;
+        let barChart = null;
+        let trendChart = null;
+
+        // --- INIT APP ON LOAD ---
+        window.onload = function() {
+            loadState();
+            setupCurrentDate();
+            renderDashboard();
+            initCharts();
+            // Default date field inputs to today
+            document.getElementById('manualDate').valueAsDate = new Date();
+            document.getElementById('extraIncomeDate').valueAsDate = new Date();
+        };
+
+        // --- STATE MANAGEMENT & LOCAL STORAGE ---
+        function loadState() {
+            const saved = localStorage.getItem('emanuele_finance_app_state');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                } catch(e) {
+                    state.transactions = [...SEED_TRANSACTIONS];
+                }
+            } else {
+                state.transactions = [...SEED_TRANSACTIONS];
+                saveState();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('emanuele_finance_app_state', JSON.stringify(state));
+        }
+
+        function resetDataModal() {
+            if (confirm("Vuoi ripristinare la configurazione e le transazioni iniziali di prova?")) {
+                localStorage.removeItem('emanuele_finance_app_state');
+                state.salary = DEFAULT_MONTHLY_SALARY;
+                state.taxReserve = DEFAULT_TAX_RESERVE;
+                state.fixedCosts = DEFAULT_FIXED_COSTS;
+                state.transactions = [...SEED_TRANSACTIONS];
+                saveState();
+                renderDashboard();
+                updateCharts();
+            }
+        }
+
+        function setupCurrentDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date();
+            document.getElementById('currentDateStr').innerText = today.toLocaleDateString('it-IT', options);
+        }
+
+        // --- DASHBOARD CALCULATIONS & RENDERING ---
+        function renderDashboard() {
+            // Update Totals
+            const totalFixedAndTax = state.taxReserve + state.fixedCosts;
+            const remainingMargin = state.salary - totalFixedAndTax;
+
+            document.getElementById('taxReserveDisplay').innerText = `€${state.taxReserve.toFixed(2).replace('.', ',')}`;
+            document.getElementById('fixedCostsDisplay').innerText = `€${state.fixedCosts.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalFixedDisplay').innerText = `€${totalFixedAndTax.toFixed(2).replace('.', ',')} / mese`;
+            document.getElementById('remainingMarginDisplay').innerText = `€${remainingMargin.toFixed(2).replace('.', ',')}`;
+
+            // Calculate Weekly Spent (sum of SCONTRINO type in recent 7 days)
+            const spentScontrini = state.transactions
+                .filter(t => t.type === 'SCONTRINO')
+                .reduce((acc, curr) => acc + curr.amount, 0);
+
+            // Weekly allowance approx
+            const weeklySpent = Math.min(spentScontrini, 350.00); 
+            const weeklyRem = Math.max(0, state.weeklyBudget - weeklySpent);
+            const progressPercent = Math.min(100, Math.round((weeklySpent / state.weeklyBudget) * 100));
+
+            document.getElementById('weeklyProgressBar').style.width = `${progressPercent}%`;
+            document.getElementById('spentThisWeekText').innerText = `Spesi: €${weeklySpent.toFixed(2).replace('.', ',')}`;
+            document.getElementById('remainingThisWeekText').innerText = `Rimanenti: €${weeklyRem.toFixed(2).replace('.', ',')}`;
+
+            renderTransactions();
+        }
+
+        function renderTransactions() {
+            const filter = document.getElementById('filterType').value;
+            const listEl = document.getElementById('transactionsList');
+            listEl.innerHTML = '';
+
+            let filtered = state.transactions;
+            if (filter !== 'ALL') {
+                filtered = state.transactions.filter(t => t.type === filter);
+            }
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nessun movimento trovato per il filtro selezionato.</p>`;
+                return;
+            }
+
+            filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => {
+                const isIncome = item.type === 'INCOME';
+                const sign = isIncome ? '+' : '-';
+                const amountColor = isIncome ? 'text-emerald-400' : (item.type === 'TAX' ? 'text-amber-400' : 'text-slate-200');
+
+                let badgeBg = 'bg-slate-800 text-slate-300';
+                if (item.type === 'TAX') badgeBg = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                if (item.type === 'RID') badgeBg = 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
+                if (item.type === 'SCONTRINO') badgeBg = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                if (item.type === 'INCOME') badgeBg = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+
+                const cardHtml = `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800 transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm ${badgeBg}">
+                                <i class="fa-solid ${item.icon || 'fa-receipt'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-semibold text-slate-100">${item.desc}</h4>
+                                <div class="flex items-center space-x-2 mt-0.5">
+                                    <span class="text-[10px] text-slate-400">${item.date}</span>
+                                    <span class="text-[9px] px-1.5 py-0.2 rounded ${badgeBg}">${item.category || item.type}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold ${amountColor}">${sign}€${item.amount.toFixed(2).replace('.', ',')}</span>
+                            <button onclick="deleteTransaction(${item.id})" class="block text-[10px] text-slate-500 hover:text-red-400 ml-auto mt-0.5">
+                                elimina
+                            </button>
+                        </div>
+                    </div>
+                `;
+                listEl.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        function deleteTransaction(id) {
+            state.transactions = state.transactions.filter(t => t.id !== id);
+            saveState();
+            renderDashboard();
+            updateCharts();
+        }
+
+        // --- TAB SWITCHER ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // Bottom Nav styling
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('bottom-nav-active', 'text-cyan-400'));
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bottom-nav-active', 'text-cyan-400');
+            }
+
+            if (tabId === 'tab-grafici') {
+                setTimeout(() => updateCharts(), 50);
+            }
+        }
+
+        // --- OCR / SCONTRINI SIMULATOR ---
+        function handleReceiptUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('receiptUploadPrompt').classList.add('hidden');
+                document.getElementById('receiptScanningState').classList.remove('hidden');
+                document.getElementById('receiptImagePreview').src = e.target.result;
+
+                // Simulate OCR delay
+                setTimeout(() => {
+                    document.getElementById('receiptScanningState').classList.add('hidden');
+                    document.getElementById('ocrResultForm').classList.remove('hidden');
+
+                    // OCR Smart simulated Extraction
+                    document.getElementById('ocrMerchant').value = "Eurospin / Supermercato";
+                    document.getElementById('ocrAmount').value = "42.80";
+                    document.getElementById('ocrDate').valueAsDate = new Date();
+                    document.getElementById('ocrCategory').value = "Supermercato/Alimentari";
+                }, 1500);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function simulateReceiptScan(merchant, amount, category) {
+            switchTab('tab-scontrini');
+            document.getElementById('receiptUploadPrompt').classList.add('hidden');
+            document.getElementById('receiptScanningState').classList.remove('hidden');
+            document.getElementById('receiptImagePreview').src = "https://placehold.co/300x400/0f172a/22d3ee?text=Scontrino+Scansionato";
+
+            setTimeout(() => {
+                document.getElementById('receiptScanningState').classList.add('hidden');
+                document.getElementById('ocrResultForm').classList.remove('hidden');
+
+                document.getElementById('ocrMerchant').value = merchant;
+                document.getElementById('ocrAmount').value = amount.toFixed(2);
+                document.getElementById('ocrDate').valueAsDate = new Date();
+                document.getElementById('ocrCategory').value = category;
+            }, 1000);
+        }
+
+        function saveOcrTransaction() {
+            const merchant = document.getElementById('ocrMerchant').value || 'Spesa Generica';
+            const amount = parseFloat(document.getElementById('ocrAmount').value) || 0;
+            const date = document.getElementById('ocrDate').value || new Date().toISOString().split('T')[0];
+            const category = document.getElementById('ocrCategory').value;
+
+            if (amount <= 0) {
+                alert("Inserire un importo valido per lo scontrino.");
+                return;
+            }
+
+            const newTx = {
+                id: Date.now(),
+                desc: merchant,
+                amount: amount,
+                type: 'SCONTRINO',
+                category: category,
+                date: date,
+                icon: 'fa-receipt',
+                color: 'emerald'
+            };
+
+            state.transactions.push(newTx);
+            saveState();
+            cancelOcrScan();
+            switchTab('tab-dashboard');
+            renderDashboard();
+            updateCharts();
+        }
+
+        function cancelOcrScan() {
+            document.getElementById('ocrResultForm').classList.add('hidden');
+            document.getElementById('receiptScanningState').classList.add('hidden');
+            document.getElementById('receiptUploadPrompt').classList.remove('hidden');
+            document.getElementById('receiptFileInput').value = '';
+        }
+
+        // --- BANK STATEMENT IMPORT SIMULATOR ---
+        function handleBankStatementUpload(e) {
+            simulateBankStatementImport();
+        }
+
+        function simulateBankStatementImport() {
+            const logEl = document.getElementById('importLog');
+            const logContent = document.getElementById('importLogContent');
+            logEl.classList.remove('hidden');
+
+            logContent.innerHTML = "Analisi tracciato estratto conto bancario in corso...<br>";
+
+            setTimeout(() => {
+                logContent.innerHTML += "✓ Trovate n. 4 disposizioni RID ricorrenti (TIM, Iliad, PC, Contabo)<br>";
+            }, 600);
+
+            setTimeout(() => {
+                logContent.innerHTML += "✓ Riconosciuto accredito Stipendio €2.700,00<br>";
+                logContent.innerHTML += "<span class='text-emerald-400 font-bold'>✓ Importazione completata con successo! Registro aggiornato.</span>";
+
+                // Add simulated transaction from statement
+                state.transactions.push({
+                    id: Date.now(),
+                    desc: 'Addebito RID Fibra TIM',
+                    amount: 34.90,
+                    type: 'RID',
+                    category: 'Uscite Fisse',
+                    date: new Date().toISOString().split('T')[0],
+                    icon: 'fa-wifi',
+                    color: 'cyan'
+                });
+
+                saveState();
+                renderDashboard();
+                updateCharts();
+            }, 1400);
+        }
+
+        // --- MANUAL TRANSACTION MODAL ---
+        function openManualTransactionModal() {
+            document.getElementById('manualModal').classList.remove('hidden');
+            document.getElementById('manualModal').classList.add('flex');
+        }
+
+        function closeManualTransactionModal() {
+            document.getElementById('manualModal').classList.add('hidden');
+            document.getElementById('manualModal').classList.remove('flex');
+        }
+
+        function saveManualTransaction() {
+            const desc = document.getElementById('manualDesc').value || 'Movimento Manuale';
+            const amount = parseFloat(document.getElementById('manualAmount').value) || 0;
+            const type = document.getElementById('manualType').value;
+            const date = document.getElementById('manualDate').value || new Date().toISOString().split('T')[0];
+
+            if (amount <= 0) {
+                alert("Inserisci un importo valido.");
+                return;
+            }
+
+            let icon = 'fa-tag';
+            if (type === 'RID') icon = 'fa-file-invoice';
+            if (type === 'TAX') icon = 'fa-building-columns';
+            if (type === 'INCOME') icon = 'fa-money-bill-wave';
+            if (type === 'SCONTRINO') icon = 'fa-cart-shopping';
+
+            state.transactions.push({
+                id: Date.now(),
+                desc: desc,
+                amount: amount,
+                type: type,
+                category: type,
+                date: date,
+                icon: icon
+            });
+
+            saveState();
+            closeManualTransactionModal();
+            renderDashboard();
+            updateCharts();
+
+            // Clear fields
+            document.getElementById('manualDesc').value = '';
+            document.getElementById('manualAmount').value = '';
+        }
+
+        // --- INCOME SETUP ---
+        function saveSalaryConfig() {
+            const newSal = parseFloat(document.getElementById('incomeSalaryInput').value);
+            if (newSal && newSal > 0) {
+                state.salary = newSal;
+                saveState();
+                renderDashboard();
+                updateCharts();
+                alert("Configurazione stipendio salvata con successo!");
+            }
+        }
+
+        function addExtraIncome() {
+            const desc = document.getElementById('extraIncomeDesc').value || 'Entrata Extra';
+            const amount = parseFloat(document.getElementById('extraIncomeAmount').value) || 0;
+            const date = document.getElementById('extraIncomeDate').value || new Date().toISOString().split('T')[0];
+
+            if (amount <= 0) return;
+
+            state.transactions.push({
+                id: Date.now(),
+                desc: desc,
+                amount: amount,
+                type: 'INCOME',
+                category: 'Extra Income',
+                date: date,
+                icon: 'fa-plus-circle'
+            });
+
+            saveState();
+            renderDashboard();
+            updateCharts();
+            document.getElementById('extraIncomeDesc').value = '';
+            document.getElementById('extraIncomeAmount').value = '';
+            alert("Entrata registrata con successo!");
+        }
+
+        // --- CHART.JS INITIALIZATION & UPDATES ---
+        function initCharts() {
+            // Pie Chart
+            const ctxPie = document.getElementById('expensesPieChart').getContext('2d');
+            pieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tasse & IMU (€675)', 'Uscite Fisse / RID (€1.272,90)', 'Spese Extra / Contanti'],
+                    datasets: [{
+                        data: [675, 1272.90, 350],
+                        backgroundColor: ['#f59e0b', '#06b6d4', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Bar Chart
+            const ctxBar = document.getElementById('budgetBarChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Entrate Nette', 'Accantonamento Tasse', 'Spese Fisse RID', 'Margine Spesa'],
+                    datasets: [{
+                        label: 'Importo in €',
+                        data: [2700, 675, 1272.90, 752.10],
+                        backgroundColor: ['#34d399', '#fbbf24', '#22d3ee', '#818cf8'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+
+            // Trend Line Chart
+            const ctxTrend = document.getElementById('cashflowTrendChart').getContext('2d');
+            trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['Ago', 'Set', 'Ott', 'Nov (Prev)', 'Dic (Prev)'],
+                    datasets: [{
+                        label: 'Risparmio Accantonato (€)',
+                        data: [600, 1200, 1875, 2550, 3225],
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (!pieChart || !barChart) return;
+
+            // Compute current extra expenses
+            const extraSpent = state.transactions
+                .filter(t => t.type === 'SCONTRINO')
+                .reduce((acc, curr) => acc + curr.amount, 0);
+
+            // Update Pie Data
+            pieChart.data.datasets[0].data = [state.taxReserve, state.fixedCosts, extraSpent || 350];
+            pieChart.update();
+
+            // Update Bar Data
+            const margin = Math.max(0, state.salary - (state.taxReserve + state.fixedCosts));
+            barChart.data.datasets[0].data = [state.salary, state.taxReserve, state.fixedCosts, margin];
+            barChart.update();
+        }
+    </script>
+</body>
+</html>
+```
